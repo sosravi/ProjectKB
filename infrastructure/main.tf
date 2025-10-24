@@ -15,34 +15,14 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Variables
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-east-1"
-}
-
-variable "environment" {
-  description = "Environment name"
-  type        = string
-  default     = "production"
-}
-
-variable "project_name" {
-  description = "Project name"
-  type        = string
-  default     = "ProjectKB"
-}
-
-variable "domain_name" {
-  description = "Custom domain name (optional)"
-  type        = string
-  default     = ""
-}
-
 # Data sources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
+
+# Random ID for unique resource naming
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
 
 # S3 Buckets
 resource "aws_s3_bucket" "uploads" {
@@ -644,93 +624,3 @@ resource "aws_acm_certificate_validation" "main" {
   validation_record_fqdns = aws_route53_record.cert_validation[*].fqdn
 }
 
-# Outputs
-output "aws_region" {
-  description = "AWS region"
-  value       = data.aws_region.current.name
-}
-
-output "s3_uploads_bucket" {
-  description = "S3 bucket for uploads"
-  value       = aws_s3_bucket.uploads.bucket
-}
-
-output "s3_transcribe_bucket" {
-  description = "S3 bucket for transcribe"
-  value       = aws_s3_bucket.transcribe.bucket
-}
-
-output "s3_frontend_builds_bucket" {
-  description = "S3 bucket for frontend builds"
-  value       = aws_s3_bucket.frontend_builds.bucket
-}
-
-output "cognito_user_pool_id" {
-  description = "Cognito User Pool ID"
-  value       = aws_cognito_user_pool.main.id
-}
-
-output "cognito_user_pool_client_id" {
-  description = "Cognito User Pool Client ID"
-  value       = aws_cognito_user_pool_client.main.id
-}
-
-output "cognito_user_pool_arn" {
-  description = "Cognito User Pool ARN"
-  value       = aws_cognito_user_pool.main.arn
-}
-
-output "cognito_identity_pool_id" {
-  description = "Cognito Identity Pool ID"
-  value       = aws_cognito_identity_pool.main.id
-}
-
-output "dynamodb_pkbs_table" {
-  description = "DynamoDB PKBs table name"
-  value       = aws_dynamodb_table.pkbs.name
-}
-
-output "dynamodb_content_table" {
-  description = "DynamoDB Content table name"
-  value       = aws_dynamodb_table.content.name
-}
-
-output "api_gateway_id" {
-  description = "API Gateway ID"
-  value       = aws_api_gateway_rest_api.main.id
-}
-
-output "api_gateway_url" {
-  description = "API Gateway URL"
-  value       = "https://${aws_api_gateway_rest_api.main.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/prod"
-}
-
-output "lambda_execution_role_arn" {
-  description = "Lambda execution role ARN"
-  value       = aws_iam_role.lambda_execution_role.arn
-}
-
-output "cloudwatch_log_group" {
-  description = "CloudWatch log group name"
-  value       = aws_cloudwatch_log_group.lambda_logs.name
-}
-
-output "domain_name" {
-  description = "Custom domain name"
-  value       = var.domain_name != "" ? var.domain_name : null
-}
-
-output "hosted_zone_id" {
-  description = "Route 53 hosted zone ID"
-  value       = var.domain_name != "" ? aws_route53_zone.main[0].zone_id : null
-}
-
-output "ssl_certificate_arn" {
-  description = "SSL certificate ARN"
-  value       = var.domain_name != "" ? aws_acm_certificate.main[0].arn : null
-}
-
-output "bedrock_model_id" {
-  description = "Bedrock model ID"
-  value       = "anthropic.claude-3-sonnet-20240229-v1:0"
-}

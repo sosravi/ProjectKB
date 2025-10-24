@@ -81,6 +81,6 @@ variable "tags" {
     "ResourceType"       = "Infrastructure"
     "DeploymentMethod"   = "Terraform"
     "Version"            = "1.0.0"
-    "LastModified"       = timestamp()
+    "LastModified"       = "2025-10-24"
   }
 }
