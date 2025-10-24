@@ -1,113 +1,16 @@
-name: CI/CD Pipeline
+name: Infrastructure Only Deployment
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   release:
     types: [ published ]
 
 env:
   AWS_REGION: us-east-1
-  NODE_VERSION: '18'
 
 jobs:
-  # Frontend Tests and Build
-  frontend-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Run linting
-      run: npm run lint || echo "No linting configured"
-      
-    - name: Run tests
-      run: npm run test -- --coverage --watchAll=false --passWithNoTests
-      
-    - name: Build application
-      run: npm run build
-      
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-build
-        path: frontend/build/
-
-  # Backend Tests
-  backend-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Run linting
-      run: npm run lint || echo "No linting configured"
-      
-    - name: Run tests
-      run: npm run test
-      
-    - name: Build Lambda functions
-      run: npm run build
-
-  # Infrastructure Tests
-  infrastructure-test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_version: ~1.0
-        
-    - name: Terraform Init
-      run: |
-        cd infrastructure
-        terraform init
-        
-    - name: Terraform Validate
-      run: |
-        cd infrastructure
-        terraform validate
-        
-    - name: Terraform Plan
-      run: |
-        cd infrastructure
-        terraform plan -var='environment=production' -out=tfplan
-
-  # Deploy Infrastructure
   deploy-infrastructure:
-    needs: [frontend-test, backend-test, infrastructure-test]
+    name: Deploy AWS Infrastructure Only
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
     
     steps:
     - name: Checkout code
@@ -131,72 +34,8 @@ jobs:
         terraform init
         terraform plan -var='environment=production' -out=tfplan
         terraform apply tfplan
-
-  # Deploy Frontend to Amplify
-  deploy-frontend:
-    needs: [frontend-test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: frontend-build
-        path: frontend/build/
         
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-        
-    - name: Deploy to Amplify
-      run: |
-        aws amplify start-deployment \
-          --app-id ${{ secrets.AMPLIFY_APP_ID }} \
-          --branch-name main \
-          --source-url s3://${{ secrets.AMPLIFY_S3_BUCKET }}/frontend-build.zip
-
-  # Semantic Versioning
-  version-update:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0
-        
-    - name: Update version in frontend
-      run: |
-        cd frontend
-        npm version patch --no-git-tag-version
-        echo "Updated frontend version to $(node -p "require('./package.json').version")"
-        
-    - name: Update version in backend
-      run: |
-        cd backend
-        npm version patch --no-git-tag-version
-        echo "Updated backend version to $(node -p "require('./package.json').version")"
-        
-    - name: Update version in infrastructure
+    - name: Output Infrastructure Details
       run: |
         cd infrastructure
-        npm version patch --no-git-tag-version
-        echo "Updated infrastructure version to $(node -p "require('./package.json').version")"
-        
-    - name: Commit version updates
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git checkout main
-        git add .
-        git commit -m "chore: update versions for release ${{ github.event.release.tag_name }}" || exit 0
-        git push origin main
+        terraform output
