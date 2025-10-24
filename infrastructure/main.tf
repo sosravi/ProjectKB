@@ -79,10 +79,6 @@ resource "aws_s3_bucket" "frontend_builds" {
   })
 }
 
-# Random ID for bucket uniqueness
-resource "random_id" "bucket_suffix" {
-  byte_length = 4
-}
 
 # S3 Bucket configurations
 resource "aws_s3_bucket_versioning" "uploads" {

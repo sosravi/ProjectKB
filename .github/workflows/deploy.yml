@@ -36,7 +36,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend
-        npm install --legacy-peer-deps
+        npm install
         
     - name: Build frontend
       env:
