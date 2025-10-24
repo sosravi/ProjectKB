@@ -1,4 +1,4 @@
-name: Infrastructure Only Deployment
+name: Infrastructure Deployment
 
 on:
   release:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   deploy-infrastructure:
-    name: Deploy AWS Infrastructure Only
+    name: Deploy AWS Infrastructure
     runs-on: ubuntu-latest
     
     steps:
