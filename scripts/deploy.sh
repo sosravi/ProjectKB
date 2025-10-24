@@ -95,12 +95,18 @@ build_application() {
 
 # Deploy infrastructure
 deploy_infrastructure() {
-    echo -e "${YELLOW}🏗️ Deploying infrastructure...${NC}"
+    echo -e "${YELLOW}🏗️ Deploying infrastructure with Terraform...${NC}"
     
     cd infrastructure
     
-    # Deploy CDK stack
-    npm run deploy:${ENVIRONMENT}
+    # Initialize Terraform
+    terraform init
+    
+    # Plan deployment
+    terraform plan -var="environment=${ENVIRONMENT}" -out=tfplan
+    
+    # Apply deployment
+    terraform apply tfplan
     
     cd ..
     

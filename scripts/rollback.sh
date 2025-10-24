@@ -64,12 +64,12 @@ get_previous_version() {
 
 # Rollback infrastructure
 rollback_infrastructure() {
-    echo -e "${YELLOW}🏗️ Rolling back infrastructure...${NC}"
+    echo -e "${YELLOW}🏗️ Rolling back infrastructure with Terraform...${NC}"
     
     cd infrastructure
     
-    # Rollback CDK stack
-    npm run rollback:${ENVIRONMENT}
+    # Rollback Terraform stack
+    terraform destroy -var="environment=${ENVIRONMENT}" -auto-approve
     
     cd ..
     

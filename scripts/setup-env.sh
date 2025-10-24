@@ -95,31 +95,39 @@ install_aws_cli() {
     fi
 }
 
-# Install Git
-install_git() {
-    echo -e "${YELLOW}📝 Installing Git...${NC}"
+# Install Terraform
+install_terraform() {
+    echo -e "${YELLOW}🏗️ Installing Terraform...${NC}"
     
-    if command -v git &> /dev/null; then
-        GIT_VERSION=$(git --version)
-        echo -e "${GREEN}✅ Git already installed: ${GIT_VERSION}${NC}"
+    if command -v terraform &> /dev/null; then
+        TERRAFORM_VERSION=$(terraform --version | head -n1)
+        echo -e "${GREEN}✅ Terraform already installed: ${TERRAFORM_VERSION}${NC}"
+        
+        # Check if version is 1.0 or higher
+        TERRAFORM_MAJOR=$(echo $TERRAFORM_VERSION | grep -o '[0-9]*' | head -1)
+        if [ "$TERRAFORM_MAJOR" -lt 1 ]; then
+            echo -e "${YELLOW}⚠️ Terraform version ${TERRAFORM_VERSION} is below 1.0. Please upgrade.${NC}"
+        fi
     else
-        echo -e "${YELLOW}Installing Git...${NC}"
+        echo -e "${YELLOW}Installing Terraform...${NC}"
         
         case $OS in
             "macos")
                 if command -v brew &> /dev/null; then
-                    brew install git
+                    brew tap hashicorp/tap
+                    brew install hashicorp/tap/terraform
                 else
-                    echo -e "${RED}❌ Homebrew not found. Please install Git manually.${NC}"
+                    echo -e "${RED}❌ Homebrew not found. Please install Terraform manually.${NC}"
                     exit 1
                 fi
                 ;;
             "linux")
-                sudo apt-get update
-                sudo apt-get install -y git
+                wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+                echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+                sudo apt update && sudo apt install terraform
                 ;;
             "windows")
-                echo -e "${YELLOW}Please install Git from https://git-scm.com${NC}"
+                echo -e "${YELLOW}Please install Terraform from https://terraform.io/downloads${NC}"
                 ;;
         esac
     fi
@@ -259,11 +267,11 @@ verify_installation() {
         echo -e "${RED}❌ AWS CLI not found${NC}"
     fi
     
-    # Check Git
-    if command -v git &> /dev/null; then
-        echo -e "${GREEN}✅ Git: $(git --version)${NC}"
+    # Check Terraform
+    if command -v terraform &> /dev/null; then
+        echo -e "${GREEN}✅ Terraform: $(terraform --version | head -n1)${NC}"
     else
-        echo -e "${RED}❌ Git not found${NC}"
+        echo -e "${RED}❌ Terraform not found${NC}"
     fi
 }
 
@@ -276,6 +284,7 @@ main() {
     install_nodejs
     install_aws_cli
     install_git
+    install_terraform
     setup_aws_credentials
     install_dependencies
     setup_environment_files

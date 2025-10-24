@@ -111,19 +111,18 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
         
-    - name: Deploy infrastructure
+    - name: Deploy infrastructure with Terraform
       env:
         AWS_REGION: ${{ env.AWS_REGION }}
-        S3_BUCKET: ${{ secrets.S3_BUCKET }}
-        COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
-        COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
-        BEDROCK_MODEL_ID: ${{ secrets.BEDROCK_MODEL_ID }}
-        TRANSCRIBE_BUCKET: ${{ secrets.TRANSCRIBE_BUCKET }}
-        DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-        SSL_CERTIFICATE_ARN: ${{ secrets.SSL_CERTIFICATE_ARN }}
+        TF_VAR_aws_region: ${{ env.AWS_REGION }}
+        TF_VAR_environment: production
+        TF_VAR_project_name: ProjectKB
+        TF_VAR_domain_name: ${{ secrets.DOMAIN_NAME }}
       run: |
         cd infrastructure
-        npm run deploy:production
+        terraform init
+        terraform plan -var='environment=production' -out=tfplan
+        terraform apply tfplan
         
     - name: Deploy Lambda functions
       run: |

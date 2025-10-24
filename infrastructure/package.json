@@ -1,29 +1,62 @@
 {
   "name": "projectkb-infrastructure",
-  "version": "0.1.0",
-  "bin": {
-    "projectkb": "bin/projectkb.js"
-  },
+  "version": "1.0.0",
+  "description": "Terraform infrastructure for ProjectKB",
+  "main": "main.tf",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "test": "jest",
-    "cdk": "cdk",
-    "deploy": "cdk deploy",
-    "destroy": "cdk destroy",
-    "synth": "cdk synth",
-    "diff": "cdk diff"
+    "init": "terraform init",
+    "plan": "terraform plan",
+    "apply": "terraform apply",
+    "destroy": "terraform destroy",
+    "validate": "terraform validate",
+    "format": "terraform fmt -recursive",
+    "plan:production": "terraform plan -var='environment=production'",
+    "apply:production": "terraform apply -var='environment=production'",
+    "plan:staging": "terraform plan -var='environment=staging'",
+    "apply:staging": "terraform apply -var='environment=staging'",
+    "plan:development": "terraform plan -var='environment=development'",
+    "apply:development": "terraform apply -var='environment=development'",
+    "output": "terraform output",
+    "output:json": "terraform output -json",
+    "show": "terraform show",
+    "state:list": "terraform state list",
+    "state:show": "terraform state show",
+    "import": "terraform import",
+    "refresh": "terraform refresh",
+    "workspace:list": "terraform workspace list",
+    "workspace:new": "terraform workspace new",
+    "workspace:select": "terraform workspace select",
+    "workspace:delete": "terraform workspace delete"
   },
+  "keywords": [
+    "terraform",
+    "aws",
+    "infrastructure",
+    "projectkb",
+    "serverless",
+    "cognito",
+    "dynamodb",
+    "s3",
+    "lambda",
+    "api-gateway"
+  ],
+  "author": "ProjectKB Team",
+  "license": "MIT",
   "devDependencies": {
-    "@types/jest": "^29.4.0",
-    "@types/node": "20.1.0",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "aws-cdk": "2.100.0",
-    "typescript": "~5.0.4"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   },
-  "dependencies": {
-    "aws-cdk-lib": "2.100.0",
-    "constructs": "^10.0.0"
-  }
+  "engines": {
+    "node": ">=18.0.0",
+    "terraform": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sosravi/ProjectKB.git",
+    "directory": "infrastructure"
+  },
+  "bugs": {
+    "url": "https://github.com/sosravi/ProjectKB/issues"
+  },
+  "homepage": "https://github.com/sosravi/ProjectKB#readme"
 }
