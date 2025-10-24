@@ -32,7 +32,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
         
     - name: Install dependencies
       run: |
@@ -49,6 +48,11 @@ jobs:
       run: |
         cd frontend
         npm run build
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.6.0
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -90,7 +94,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
         
     - name: Install dependencies
       run: |
@@ -103,6 +106,11 @@ jobs:
       run: |
         cd backend
         npm run build
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.6.0
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -147,6 +155,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.6.0
+        
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
