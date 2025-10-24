@@ -1,0 +1,238 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+env:
+  NODE_VERSION: '18'
+  AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+        
+    - name: Build frontend
+      env:
+        REACT_APP_API_URL: ${{ secrets.API_URL }}
+        REACT_APP_COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+        REACT_APP_COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+        REACT_APP_S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        REACT_APP_BEDROCK_MODEL_ID: ${{ secrets.BEDROCK_MODEL_ID }}
+      run: |
+        cd frontend
+        npm run build
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Deploy to AWS Amplify
+      run: |
+        cd frontend
+        aws amplify start-deployment \
+          --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+          --branch-name ${{ secrets.AMPLIFY_BRANCH_NAME || 'main' }} \
+          --source-url s3://${{ secrets.S3_BUCKET }}/frontend-build.zip
+          
+    - name: Wait for deployment
+      run: |
+        echo "Waiting for Amplify deployment to complete..."
+        sleep 300
+        
+    - name: Get deployment URL
+      id: get-url
+      run: |
+        DEPLOYMENT_URL=$(aws amplify get-app --app-id ${{ secrets.AMPLIFY_APP_ID }} --query 'app.defaultDomain' --output text)
+        echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+        echo "Frontend deployed to: $DEPLOYMENT_URL"
+
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd backend
+        npm ci
+        cd ../infrastructure
+        npm ci
+        
+    - name: Build backend
+      run: |
+        cd backend
+        npm run build
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Deploy infrastructure
+      env:
+        AWS_REGION: ${{ env.AWS_REGION }}
+        S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+        COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+        BEDROCK_MODEL_ID: ${{ secrets.BEDROCK_MODEL_ID }}
+        TRANSCRIBE_BUCKET: ${{ secrets.TRANSCRIBE_BUCKET }}
+        DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+        SSL_CERTIFICATE_ARN: ${{ secrets.SSL_CERTIFICATE_ARN }}
+      run: |
+        cd infrastructure
+        npm run deploy:production
+        
+    - name: Deploy Lambda functions
+      run: |
+        cd backend
+        npm run deploy:production
+        
+    - name: Get API Gateway URL
+      id: get-api-url
+      run: |
+        API_URL=$(aws apigateway get-rest-apis --query 'items[?name==`ProjectKB-API`].id' --output text)
+        echo "api-url=https://$API_URL.execute-api.${{ env.AWS_REGION }}.amazonaws.com/prod" >> $GITHUB_OUTPUT
+        echo "Backend API deployed to: https://$API_URL.execute-api.${{ env.AWS_REGION }}.amazonaws.com/prod"
+
+  deploy-domain:
+    name: Deploy Custom Domain
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    needs: [deploy-frontend, deploy-backend]
+    if: github.event.inputs.environment == 'production' || github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Setup custom domain
+      env:
+        DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+        AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+        SSL_CERTIFICATE_ARN: ${{ secrets.SSL_CERTIFICATE_ARN }}
+      run: |
+        # Create custom domain in Amplify
+        aws amplify create-domain-association \
+          --app-id $AMPLIFY_APP_ID \
+          --domain-name $DOMAIN_NAME \
+          --certificate-settings certificateType=AMPLIFY_MANAGED \
+          --sub-domain-settings branchName=main,prefix=www \
+          --sub-domain-settings branchName=main,prefix=""
+          
+    - name: Configure Route 53
+      env:
+        DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+        HOSTED_ZONE_ID: ${{ secrets.HOSTED_ZONE_ID }}
+      run: |
+        # Get Amplify domain info
+        AMPLIFY_DOMAIN=$(aws amplify get-domain-association --app-id ${{ secrets.AMPLIFY_APP_ID }} --domain-name $DOMAIN_NAME --query 'domainAssociation.domainName' --output text)
+        
+        # Update Route 53 records
+        aws route53 change-resource-record-sets \
+          --hosted-zone-id $HOSTED_ZONE_ID \
+          --change-batch file://route53-changes.json
+
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, deploy-domain]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run health checks
+      env:
+        FRONTEND_URL: ${{ needs.deploy-frontend.outputs.deployment-url }}
+        API_URL: ${{ needs.deploy-backend.outputs.api-url }}
+      run: |
+        # Check frontend health
+        curl -f $FRONTEND_URL || exit 1
+        
+        # Check API health
+        curl -f $API_URL/health || exit 1
+        
+        # Check database connectivity
+        curl -f $API_URL/health/database || exit 1
+        
+        echo "All health checks passed!"
+
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, deploy-domain, health-check]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        channel: '#deployments'
+        text: |
+          🚀 Production deployment successful!
+          Frontend: ${{ needs.deploy-frontend.outputs.deployment-url }}
+          API: ${{ needs.deploy-backend.outputs.api-url }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      if: needs.health-check.result == 'success'
+      
+    - name: Notify failure
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#deployments'
+        text: '❌ Production deployment failed! Check logs for details.'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      if: needs.health-check.result == 'failure'

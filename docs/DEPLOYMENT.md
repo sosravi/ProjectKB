@@ -1,273 +1,334 @@
-# ProjectKB Deployment Guide
+# Deployment Guide
+
+This guide provides step-by-step instructions for deploying ProjectKB to AWS using the CI/CD pipeline.
 
 ## Prerequisites
 
-### Required Tools
-- Node.js 18+ and npm
-- AWS CLI configured with appropriate permissions
-- AWS CDK CLI (`npm install -g aws-cdk`)
-- Git
+### 1. AWS Account Setup
+- AWS Account with appropriate permissions
+- AWS CLI installed and configured
+- Node.js 18+ installed
+- Git installed
 
-### AWS Permissions Required
-- Cognito (User Pools, Identity Providers)
-- DynamoDB (Tables, Indexes)
-- S3 (Buckets, Policies)
-- Lambda (Functions, Layers)
-- API Gateway (APIs, Authorizers)
-- IAM (Roles, Policies)
-- Bedrock (Model Access)
-- Amplify (Hosting)
+### 2. Required AWS Services
+- AWS Amplify (for frontend hosting)
+- AWS Lambda (for backend functions)
+- AWS API Gateway (for API endpoints)
+- AWS Cognito (for authentication)
+- AWS DynamoDB (for data storage)
+- AWS S3 (for file storage)
+- AWS Bedrock (for AI services)
+- AWS Rekognition (for image analysis)
+- AWS Transcribe (for audio transcription)
+- AWS Route 53 (for custom domain)
+- AWS CloudFormation (for infrastructure)
 
-## Initial Setup
+### 3. GitHub Repository Setup
+- GitHub repository with Actions enabled
+- GitHub Secrets configured (see below)
 
-### 1. Clone Repository
-```bash
-git clone <your-repository-url>
-cd ProjectKB
+## GitHub Secrets Configuration
+
+Configure the following secrets in your GitHub repository (Settings → Secrets and variables → Actions):
+
+### Required Secrets
 ```
-
-### 2. Install Dependencies
-```bash
-# Install infrastructure dependencies
-cd infrastructure
-npm install
-
-# Install frontend dependencies
-cd ../frontend
-npm install
-
-# Install backend dependencies
-cd ../backend
-npm install
-```
-
-### 3. Configure AWS Credentials
-```bash
-aws configure
-# Enter your AWS Access Key ID, Secret Access Key, and Region
-```
-
-### 4. Bootstrap CDK (First Time Only)
-```bash
-cd infrastructure
-cdk bootstrap
-```
-
-## Environment Configuration
-
-### 1. Create Environment File
-Create `infrastructure/.env`:
-```env
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 AWS_REGION=us-east-1
-AWS_ACCOUNT_ID=your-account-id
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-MICROSOFT_CLIENT_ID=your-microsoft-client-id
-MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
+S3_BUCKET=your_projectkb_uploads_bucket_name
+TRANSCRIBE_BUCKET=your_projectkb_transcribe_bucket_name
+COGNITO_USER_POOL_ID=your_cognito_user_pool_id
+COGNITO_CLIENT_ID=your_cognito_client_id
+API_URL=https://your_api_gateway_url.execute-api.us-east-1.amazonaws.com/prod
+BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+AMPLIFY_APP_ID=your_amplify_app_id
+AMPLIFY_BRANCH_NAME=main
 ```
 
-### 2. Update CDK Stack
-Update the CDK stack with your OAuth credentials:
-```typescript
-// In infrastructure/lib/projectkb-stack.ts
-const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleProvider', {
-  userPool,
-  clientId: process.env.GOOGLE_CLIENT_ID!,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  // ... rest of configuration
-});
+### Optional Secrets (for custom domain)
+```
+DOMAIN_NAME=your_custom_domain.com
+HOSTED_ZONE_ID=your_route53_hosted_zone_id
+SSL_CERTIFICATE_ARN=your_ssl_certificate_arn
 ```
 
-## Deployment Process
+### Optional Secrets (for notifications)
+```
+SLACK_WEBHOOK_URL=your_slack_webhook_url
+SNYK_TOKEN=your_snyk_token
+```
 
-### 1. Deploy Infrastructure
+## AWS Setup
+
+### 1. Create S3 Buckets
+```bash
+# Create uploads bucket
+aws s3 mb s3://your-projectkb-uploads-bucket --region us-east-1
+
+# Create transcribe bucket
+aws s3 mb s3://your-projectkb-transcribe-bucket --region us-east-1
+
+# Enable versioning
+aws s3api put-bucket-versioning --bucket your-projectkb-uploads-bucket --versioning-configuration Status=Enabled
+aws s3api put-bucket-versioning --bucket your-projectkb-transcribe-bucket --versioning-configuration Status=Enabled
+```
+
+### 2. Create Cognito User Pool
+```bash
+# Create user pool
+aws cognito-idp create-user-pool \
+  --pool-name ProjectKB-Users \
+  --policies '{
+    "PasswordPolicy": {
+      "MinimumLength": 8,
+      "RequireUppercase": true,
+      "RequireLowercase": true,
+      "RequireNumbers": true,
+      "RequireSymbols": true
+    }
+  }' \
+  --auto-verified-attributes email \
+  --username-attributes email
+
+# Create user pool client
+aws cognito-idp create-user-pool-client \
+  --user-pool-id your_user_pool_id \
+  --client-name ProjectKB-Client \
+  --explicit-auth-flows ADMIN_NO_SRP_AUTH ALLOW_USER_PASSWORD_AUTH ALLOW_REFRESH_TOKEN_AUTH
+```
+
+### 3. Create Amplify App
+```bash
+# Create Amplify app
+aws amplify create-app \
+  --name ProjectKB \
+  --description "ProjectKB Knowledge Management System" \
+  --platform WEB \
+  --repository https://github.com/your-username/ProjectKB \
+  --access-token your_github_token
+```
+
+### 4. Enable Required AWS Services
+- Enable AWS Bedrock in your region
+- Enable AWS Rekognition
+- Enable AWS Transcribe
+- Configure IAM roles for Lambda functions
+
+## Environment Variables
+
+### 1. Copy Environment Templates
+```bash
+# Copy development environment
+cp env.example .env
+
+# Copy production environment
+cp env.production.example .env.production
+```
+
+### 2. Fill in Your Values
+Edit the environment files with your actual AWS resource IDs and credentials.
+
+## Deployment Steps
+
+### 1. Automatic Deployment (Recommended)
+
+The CI/CD pipeline will automatically deploy when you:
+- Push to `main` branch (production deployment)
+- Push to `develop` branch (staging deployment)
+- Create a GitHub release
+
+### 2. Manual Deployment
+
+#### Deploy Infrastructure
 ```bash
 cd infrastructure
-npm run deploy
+npm install
+npm run deploy:production
 ```
 
-This will create:
-- Cognito User Pool with Google/Microsoft OAuth
-- DynamoDB tables for PKBs and content
-- S3 bucket for file storage
-- Lambda functions for API endpoints
-- API Gateway with Cognito authorizers
-
-### 2. Deploy Frontend to Amplify
+#### Deploy Backend
 ```bash
-# Build the frontend
-cd frontend
+cd backend
+npm install
 npm run build
-
-# Deploy to Amplify (manual)
-aws amplify create-app --name projectkb-frontend
-aws amplify create-branch --app-id <app-id> --branch-name main
+npm run deploy:production
 ```
 
-### 3. Configure Frontend Environment
-Create `frontend/.env`:
-```env
-REACT_APP_API_URL=https://your-api-gateway-url.amazonaws.com/prod
-REACT_APP_USER_POOL_ID=your-user-pool-id
-REACT_APP_USER_POOL_CLIENT_ID=your-user-pool-client-id
-REACT_APP_REGION=us-east-1
-```
-
-## GitHub Actions Setup
-
-### 1. Repository Secrets
-Add these secrets to your GitHub repository:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AMPLIFY_APP_ID`
-- `AMPLIFY_S3_BUCKET`
-
-### 2. OAuth Provider Setup
-
-#### Google OAuth
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URIs:
-   - `https://your-domain.auth.us-east-1.amazoncognito.com/oauth2/idpresponse`
-
-#### Microsoft OAuth
-1. Go to [Azure Portal](https://portal.azure.com/)
-2. Navigate to Azure Active Directory > App registrations
-3. Create new registration
-4. Add redirect URI:
-   - `https://your-domain.auth.us-east-1.amazoncognito.com/oauth2/idpresponse`
-
-## Release Process
-
-### 1. Create Release
+#### Deploy Frontend
 ```bash
-# Create a new release tag
-git tag v1.0.0
-git push origin v1.0.0
-
-# Create GitHub release
-gh release create v1.0.0 --title "Release v1.0.0" --notes "Initial release"
+cd frontend
+npm install
+npm run build
+npm run deploy:production
 ```
 
-### 2. Automated Deployment
-GitHub Actions will automatically:
-- Run tests and linting
-- Build applications
-- Deploy infrastructure
-- Deploy frontend to Amplify
-- Update version numbers
+### 3. Custom Domain Setup (Optional)
 
-## Monitoring and Troubleshooting
-
-### 1. CloudWatch Logs
-Monitor Lambda function logs:
+#### Create Route 53 Hosted Zone
 ```bash
-aws logs describe-log-groups --log-group-name-prefix /aws/lambda/projectkb
+aws route53 create-hosted-zone \
+  --name your-domain.com \
+  --caller-reference $(date +%s)
 ```
 
-### 2. API Gateway Monitoring
-- Check API Gateway console for request metrics
-- Monitor 4xx/5xx error rates
-- Review Cognito authorizer logs
+#### Configure DNS Records
+```bash
+# Get Amplify domain info
+aws amplify get-domain-association \
+  --app-id your_amplify_app_id \
+  --domain-name your-domain.com
 
-### 3. Common Issues
+# Update Route 53 records with Amplify domain info
+```
 
-#### Cognito OAuth Issues
-- Verify redirect URIs match exactly
-- Check client ID and secret configuration
-- Ensure OAuth scopes are correct
+## Verification
 
-#### S3 Upload Issues
-- Verify bucket policies allow user access
-- Check pre-signed URL expiration
-- Ensure CORS configuration is correct
+### 1. Health Checks
+```bash
+# Check frontend
+curl -f https://your-domain.com
 
-#### Lambda Cold Starts
-- Monitor function duration metrics
-- Consider provisioned concurrency for critical functions
-- Optimize function code and dependencies
+# Check API
+curl -f https://your-api-gateway-url.execute-api.us-east-1.amazonaws.com/prod/health
+
+# Check database
+curl -f https://your-api-gateway-url.execute-api.us-east-1.amazonaws.com/prod/health/database
+```
+
+### 2. Test Authentication
+- Visit your frontend URL
+- Try to sign up for a new account
+- Verify email confirmation works
+- Test sign in/sign out
+
+### 3. Test File Upload
+- Create a new PKB
+- Upload a file
+- Verify file appears in the interface
+
+### 4. Test AI Features
+- Ask a question about uploaded content
+- Test image analysis
+- Test audio transcription
 
 ## Rollback Procedures
 
 ### 1. Infrastructure Rollback
 ```bash
 cd infrastructure
-cdk destroy ProjectKbStack
-# Deploy previous version
-git checkout <previous-commit>
-npm run deploy
+npm run rollback:production
 ```
 
-### 2. Frontend Rollback
+### 2. Application Rollback
 ```bash
-# In Amplify console, revert to previous deployment
-# Or redeploy previous version
-cd frontend
-git checkout <previous-commit>
-npm run build
-# Manual deployment to Amplify
+# Rollback to previous version
+git checkout previous-stable-tag
+npm run deploy:production
 ```
 
 ### 3. Database Rollback
-- Use DynamoDB point-in-time recovery
-- Restore from S3 versioning if needed
-- Manual data migration if required
+```bash
+# Restore from backup (if available)
+aws dynamodb restore-table-from-backup \
+  --target-table-name ProjectKB-PKB-Prod \
+  --backup-arn your_backup_arn
+```
 
-## Cost Optimization
+## Monitoring and Logs
 
-### 1. Monitoring Costs
-- Set up AWS Budget alerts
-- Monitor Lambda execution costs
-- Track S3 storage usage
-- Review DynamoDB read/write capacity
+### 1. CloudWatch Logs
+- Lambda function logs: `/aws/lambda/projectkb-*`
+- API Gateway logs: `/aws/apigateway/projectkb-api`
+- Amplify logs: Available in Amplify console
 
-### 2. Optimization Strategies
-- Implement S3 lifecycle policies
-- Use DynamoDB on-demand billing
-- Optimize Lambda memory allocation
-- Enable CloudFront for static assets
+### 2. CloudWatch Metrics
+- Lambda invocations and errors
+- API Gateway request count and latency
+- DynamoDB read/write capacity
+- S3 storage and request metrics
+
+### 3. Alarms
+- Set up CloudWatch alarms for:
+  - Lambda errors
+  - API Gateway 5xx errors
+  - DynamoDB throttling
+  - High latency
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Deployment Failures
+- Check AWS credentials in GitHub Secrets
+- Verify all required AWS services are enabled
+- Check CloudWatch logs for detailed error messages
+
+#### 2. Authentication Issues
+- Verify Cognito User Pool configuration
+- Check CORS settings in API Gateway
+- Verify JWT token validation
+
+#### 3. File Upload Issues
+- Check S3 bucket permissions
+- Verify pre-signed URL generation
+- Check file size limits
+
+#### 4. AI Service Issues
+- Verify Bedrock model access
+- Check Rekognition permissions
+- Verify Transcribe service configuration
+
+### Getting Help
+
+1. Check CloudWatch logs for detailed error messages
+2. Review GitHub Actions logs for deployment issues
+3. Verify all environment variables are set correctly
+4. Check AWS service quotas and limits
 
 ## Security Considerations
 
-### 1. IAM Policies
-- Follow principle of least privilege
-- Use resource-specific policies
-- Regular policy audits
+### 1. IAM Permissions
+- Use least privilege principle
+- Create specific IAM roles for each service
+- Regularly rotate access keys
 
 ### 2. Data Protection
 - Enable S3 encryption
 - Use DynamoDB encryption at rest
 - Implement proper CORS policies
-- Regular security scans
 
-### 3. Access Control
-- Implement proper Cognito groups
-- Use fine-grained S3 permissions
-- Monitor API access patterns
+### 3. Network Security
+- Use VPC endpoints where possible
+- Implement proper security groups
+- Enable CloudTrail for audit logging
 
-## Support and Maintenance
+## Cost Optimization
+
+### 1. Monitoring Costs
+- Set up AWS Budget alerts
+- Monitor usage with Cost Explorer
+- Use AWS Cost Anomaly Detection
+
+### 2. Optimization Tips
+- Use S3 Intelligent Tiering
+- Optimize Lambda memory allocation
+- Use DynamoDB On-Demand billing for variable workloads
+- Implement proper caching strategies
+
+## Maintenance
 
 ### 1. Regular Updates
 - Keep dependencies updated
 - Monitor security advisories
-- Regular infrastructure reviews
+- Update AWS SDK versions
 
 ### 2. Backup Strategy
-- DynamoDB point-in-time recovery
-- S3 versioning and cross-region replication
-- Regular infrastructure snapshots
+- Enable DynamoDB point-in-time recovery
+- Regular S3 backup verification
+- Test restore procedures
 
 ### 3. Performance Monitoring
-- Set up CloudWatch dashboards
 - Monitor application performance
-- Regular load testing
-
----
-
-For additional support, refer to:
-- [AWS CDK Documentation](https://docs.aws.amazon.com/cdk/)
-- [AWS Amplify Documentation](https://docs.amplify.aws/)
-- [Chakra UI Documentation](https://chakra-ui.com/)
-- [Project Sprint Log](docs/SPRINT_LOG.md)
+- Optimize slow queries
+- Review and update capacity settings
