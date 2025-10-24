@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Flex, Spinner, Center } from '@chakra-ui/react';
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from './hooks/useAuth.ts';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from './useAuth.ts';
 import { 
   multimediaAiService, 
   ImageAnalysis, 

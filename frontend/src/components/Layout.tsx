@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Flex, Heading, Button, HStack, Spacer } from '@chakra-ui/react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth.ts';
 
 interface LayoutProps {
   children: React.ReactNode;

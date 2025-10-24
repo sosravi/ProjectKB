@@ -280,6 +280,7 @@ resource "aws_dynamodb_table" "pkbs" {
     name     = "userId-createdAt-index"
     hash_key = "userId"
     range_key = "createdAt"
+    projection_type = "ALL"
   }
 
   point_in_time_recovery {
@@ -329,6 +330,7 @@ resource "aws_dynamodb_table" "content" {
     name     = "pkbId-uploadedAt-index"
     hash_key = "pkbId"
     range_key = "uploadedAt"
+    projection_type = "ALL"
   }
 
   point_in_time_recovery {
