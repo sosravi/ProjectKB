@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Flex, Spinner, Center } from '@chakra-ui/react';
 import { useAuth } from './hooks/useAuth';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PkbPage } from './pages/PkbPage';
 import { VersionTooltip } from './components/VersionTooltip';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [showSignup, setShowSignup] = useState(false);
 
   if (isLoading) {
     return (
@@ -19,6 +21,22 @@ function App() {
     );
   }
 
+  const handleLoginSuccess = () => {
+    // Authentication state will be updated by useAuth hook
+  };
+
+  const handleSignupSuccess = () => {
+    // Handle signup success
+  };
+
+  const handleSwitchToSignup = () => {
+    setShowSignup(true);
+  };
+
+  const handleSwitchToLogin = () => {
+    setShowSignup(false);
+  };
+
   return (
     <Box minH="100vh" bg="gray.50">
       <Routes>
@@ -27,8 +45,29 @@ function App() {
           element={
             isAuthenticated ? (
               <Navigate to="/dashboard" replace />
+            ) : showSignup ? (
+              <SignupPage 
+                onSignupSuccess={handleSignupSuccess}
+                onSwitchToLogin={handleSwitchToLogin}
+              />
             ) : (
-              <LoginPage />
+              <LoginPage 
+                onLoginSuccess={handleLoginSuccess}
+                onSwitchToSignup={handleSwitchToSignup}
+              />
+            )
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <SignupPage 
+                onSignupSuccess={handleSignupSuccess}
+                onSwitchToLogin={handleSwitchToLogin}
+              />
             )
           }
         />
