@@ -605,7 +605,7 @@ resource "aws_acm_certificate" "main" {
 
 # SSL Certificate Validation (if domain provided)
 resource "aws_route53_record" "cert_validation" {
-  count = var.domain_name != "" ? length(aws_acm_certificate.main[0].domain_validation_options) : 0
+  count = var.domain_name != "" ? 2 : 0
 
   allow_overwrite = true
   name            = tolist(aws_acm_certificate.main[0].domain_validation_options)[count.index].resource_record_name
