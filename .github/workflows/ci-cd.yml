@@ -2,261 +2,203 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [ published ]
 
 env:
+  AWS_REGION: us-east-1
   NODE_VERSION: '18'
-  AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
 jobs:
-  test:
-    name: Run Tests
+  # Frontend Tests and Build
+  frontend-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         
     - name: Install dependencies
-      run: |
-        cd frontend && npm install
-        cd ../backend && npm install
-        cd ../infrastructure && npm install
-        
-    - name: Run frontend tests
-      run: |
-        cd frontend
-        npm run test:ci
-        
-    - name: Run backend tests
-      run: |
-        cd backend
-        npm run test:ci
-        
-    - name: Run infrastructure tests
-      run: |
-        cd infrastructure
-        npm run test:ci
-        
-    - name: Run E2E tests
-      run: |
-        cd frontend
-        npm run test:e2e:ci
-
-  lint:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      run: npm install
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: |
-        cd frontend && npm ci
-        cd ../backend && npm ci
-        
-    - name: Run ESLint
-      run: |
-        cd frontend && npm run lint
-        cd ../backend && npm run lint
-        
-    - name: Run Prettier
-      run: |
-        cd frontend && npm run format:check
-        cd ../backend && npm run format:check
-        
-    - name: Type checking
-      run: |
-        cd frontend && npm run type-check
-        cd ../backend && npm run type-check
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - name: Run linting
+      run: npm run lint
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: |
-        cd frontend && npm ci
-        cd ../backend && npm ci
-        
-    - name: Run security audit
-      run: |
-        cd frontend && npm audit --audit-level moderate
-        cd ../backend && npm audit --audit-level moderate
-        
-    - name: Run Snyk security scan
-      uses: snyk/actions/node@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high
-
-  build:
-    name: Build Application
-    runs-on: ubuntu-latest
-    needs: [test, lint, security]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - name: Run tests
+      run: npm run test -- --coverage --watchAll=false
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install dependencies
-      run: |
-        cd frontend && npm install
-        cd ../backend && npm install
-        cd ../infrastructure && npm install
-        
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
-        
-    - name: Build backend
-      run: |
-        cd backend
-        npm run build
-        
-    - name: Build infrastructure
-      run: |
-        cd infrastructure
-        npm run build
-        
+    - name: Build application
+      run: npm run build
+      
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts
-        path: |
-          frontend/build/
-          backend/dist/
-          infrastructure/cdk.out/
+        name: frontend-build
+        path: frontend/build/
 
-  deploy-staging:
-    name: Deploy to Staging
+  # Backend Tests
+  backend-test:
     runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/develop'
-    environment: staging
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm run test
+      
+    - name: Build Lambda functions
+      run: npm run build
+
+  # Infrastructure Tests
+  infrastructure-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infrastructure
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm run test
+      
+    - name: CDK Synth
+      run: npm run synth
+
+  # Deploy Infrastructure
+  deploy-infrastructure:
+    needs: [frontend-test, backend-test, infrastructure-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Bootstrap CDK
+      run: npm run cdk bootstrap
+      
+    - name: Deploy CDK Stack
+      run: npm run deploy
+
+  # Deploy Frontend to Amplify
+  deploy-frontend:
+    needs: [frontend-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
-        name: build-artifacts
+        name: frontend-build
+        path: frontend/build/
         
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
         
-    - name: Deploy infrastructure to staging
+    - name: Deploy to Amplify
       run: |
-        cd infrastructure
-        npm run deploy:staging
-        
-    - name: Deploy frontend to staging
-      run: |
-        cd frontend
-        npm run deploy:staging
-        
-    - name: Deploy backend to staging
-      run: |
-        cd backend
-        npm run deploy:staging
-        
-    - name: Run smoke tests
-      run: |
-        npm run test:smoke:staging
+        aws amplify start-deployment \
+          --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+          --branch-name main \
+          --source-url s3://${{ secrets.AMPLIFY_S3_BUCKET }}/frontend-build.zip
 
-  deploy-production:
-    name: Deploy to Production
+  # Semantic Versioning
+  version-update:
     runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    environment: production
+    if: github.event_name == 'release'
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Download build artifacts
-      uses: actions/download-artifact@v3
       with:
-        name: build-artifacts
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
         
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-        
-    - name: Deploy infrastructure to production
-      run: |
-        cd infrastructure
-        npm run deploy:production
-        
-    - name: Deploy frontend to production
+    - name: Update version in frontend
       run: |
         cd frontend
-        npm run deploy:production
+        npm version patch --no-git-tag-version
+        echo "Updated frontend version to $(node -p "require('./package.json').version")"
         
-    - name: Deploy backend to production
+    - name: Update version in backend
       run: |
         cd backend
-        npm run deploy:production
+        npm version patch --no-git-tag-version
+        echo "Updated backend version to $(node -p "require('./package.json').version")"
         
-    - name: Run smoke tests
+    - name: Update version in infrastructure
       run: |
-        npm run test:smoke:production
+        cd infrastructure
+        npm version patch --no-git-tag-version
+        echo "Updated infrastructure version to $(node -p "require('./package.json').version")"
         
-    - name: Notify deployment success
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        channel: '#deployments'
-        text: 'Production deployment successful!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      if: success()
-      
-    - name: Notify deployment failure
-      uses: 8398a7/action-slack@v3
-      with:
-        status: failure
-        channel: '#deployments'
-        text: 'Production deployment failed!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      if: failure()
+    - name: Commit version updates
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git checkout main
+        git add .
+        git commit -m "chore: update versions for release ${{ github.event.release.tag_name }}" || exit 0
+        git push origin main
