@@ -132,6 +132,47 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "frontend_builds" 
   }
 }
 
+# S3 Website hosting configuration for frontend (SPA support)
+resource "aws_s3_bucket_website_configuration" "frontend_builds" {
+  bucket = aws_s3_bucket.frontend_builds.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
+
+# S3 public access configuration for frontend bucket
+resource "aws_s3_bucket_public_access_block" "frontend_builds" {
+  bucket = aws_s3_bucket.frontend_builds.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# S3 Bucket policy for public read access to frontend
+resource "aws_s3_bucket_policy" "frontend_builds" {
+  bucket = aws_s3_bucket.frontend_builds.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.frontend_builds.arn}/*"
+      }
+    ]
+  })
+}
+
 # S3 Bucket policies
 resource "aws_s3_bucket_policy" "uploads" {
   bucket = aws_s3_bucket.uploads.id
