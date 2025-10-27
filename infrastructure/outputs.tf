@@ -213,6 +213,12 @@ output "backend_config" {
   }
 }
 
+# Frontend Website URL
+output "frontend_website_url" {
+  description = "Frontend website URL (S3 website endpoint)"
+  value       = "http://${aws_s3_bucket.frontend_builds.bucket}.s3-website-${data.aws_region.current.name}.amazonaws.com"
+}
+
 # GitHub Actions Configuration
 output "github_actions_config" {
   description = "Configuration for GitHub Actions secrets"
@@ -231,6 +237,7 @@ output "github_actions_config" {
     DOMAIN_NAME                = var.domain_name != "" ? var.domain_name : null
     HOSTED_ZONE_ID             = var.domain_name != "" ? aws_route53_zone.main[0].zone_id : null
     SSL_CERTIFICATE_ARN        = var.domain_name != "" ? aws_acm_certificate.main[0].arn : null
+    FRONTEND_URL               = "http://${aws_s3_bucket.frontend_builds.bucket}.s3-website-${data.aws_region.current.name}.amazonaws.com"
   }
 }
 
