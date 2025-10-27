@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth.ts';
-import { contentService } from '../services/contentService';
+import { contentService } from '../services/contentService.ts';
 
 export interface Content {
   id: string;

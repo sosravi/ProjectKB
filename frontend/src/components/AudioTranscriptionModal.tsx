@@ -23,7 +23,7 @@ import {
   ListIcon,
 } from '@chakra-ui/react';
 import { CheckIcon, WarningIcon } from '@chakra-ui/icons';
-import { useMultimediaAi } from '../hooks/useMultimediaAi';
+import { useMultimediaAi } from '../hooks/useMultimediaAi.ts';
 
 interface AudioTranscriptionModalProps {
   isOpen: boolean;

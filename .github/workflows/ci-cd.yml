@@ -1,4 +1,4 @@
-name: Infrastructure Deployment
+name: Infrastructure Only Deployment
 
 on:
   release:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   deploy-infrastructure:
-    name: Deploy AWS Infrastructure
+    name: Deploy AWS Infrastructure Only
     runs-on: ubuntu-latest
     
     steps:
@@ -39,4 +39,3 @@ jobs:
       run: |
         cd infrastructure
         terraform output
-

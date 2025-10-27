@@ -421,3 +421,4 @@ Cypress.Commands.add('createPKB', (name, description) => {
   cy.get('[data-testid="create-pkb-submit"]').click();
   cy.contains('PKB created successfully').should('be.visible');
 });
+

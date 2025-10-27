@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth.ts';
-import { aiService, AiQueryResponse, SemanticSearchResponse, SuggestionsResponse, ContentAnalysis } from '../services/aiService';
+import { aiService, AiQueryResponse, SemanticSearchResponse, SuggestionsResponse, ContentAnalysis } from '../services/aiService.ts';
 
 export const useAiAgent = (pkbId: string) => {
   const { isAuthenticated, user } = useAuth();

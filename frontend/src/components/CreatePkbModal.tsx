@@ -18,7 +18,7 @@ import {
   AlertIcon,
   useToast,
 } from '@chakra-ui/react';
-import { usePkb, CreatePkbData } from '../hooks/usePkb';
+import { usePkb, CreatePkbData } from '../hooks/usePkb.ts';
 
 interface CreatePkbModalProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth.ts';
-import { pkbService } from '../services/pkbService';
+import { pkbService } from '../services/pkbService.ts';
 
 export interface Pkb {
   id: string;

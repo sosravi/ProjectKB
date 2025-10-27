@@ -1,6 +1,6 @@
 import { Auth } from 'aws-amplify';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.projectkb.com';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://gi0wwv0vo5.execute-api.us-east-1.amazonaws.com/prod';
 
 export interface Pkb {
   id: string;
@@ -119,3 +119,4 @@ class PkbService {
 }
 
 export const pkbService = new PkbService();
+

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Heading, Text, Button, VStack, HStack, Input, InputGroup, InputLeftElement, SimpleGrid, Spinner, Center, Alert, AlertIcon, useDisclosure } from '@chakra-ui/react';
 import { SearchIcon, AddIcon } from '@chakra-ui/icons';
-import { usePkb } from '../hooks/usePkb';
-import { CreatePkbModal } from '../components/CreatePkbModal';
-import { PkbCard } from '../components/PkbCard';
+import { usePkb } from '../hooks/usePkb.ts';
+import { CreatePkbModal } from '../components/CreatePkbModal.tsx';
+import { PkbCard } from '../components/PkbCard.tsx';
 
 export const DashboardPage: React.FC = () => {
   const { pkbs, isLoading, error, refreshPkbs } = usePkb();

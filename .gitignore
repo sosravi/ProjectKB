@@ -98,3 +98,19 @@ jest.config.js
 
 # TypeScript
 *.tsbuildinfo
+
+# Terraform
+infrastructure/.terraform/
+infrastructure/.terraform.lock.hcl
+infrastructure/terraform.tfstate
+infrastructure/terraform.tfstate.backup
+*.tfstate
+*.tfstate.backup
+
+# Test payloads and responses
+test-payload.json
+response.json
+
+# Package locks (optional - uncomment if you want to ignore them)
+# package-lock.json
+

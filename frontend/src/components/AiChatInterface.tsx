@@ -18,7 +18,7 @@ import {
   Spacer,
 } from '@chakra-ui/react';
 import { CloseIcon, ArrowUpIcon } from '@chakra-ui/icons';
-import { useAiAgent } from '../hooks/useAiAgent';
+import { useAiAgent } from '../hooks/useAiAgent.ts';
 
 interface Message {
   id: string;

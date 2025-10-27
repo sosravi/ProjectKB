@@ -233,3 +233,4 @@ output "github_actions_config" {
     SSL_CERTIFICATE_ARN        = var.domain_name != "" ? aws_acm_certificate.main[0].arn : null
   }
 }
+

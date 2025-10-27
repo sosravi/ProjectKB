@@ -26,7 +26,7 @@ resource "random_id" "bucket_suffix" {
 
 # S3 Buckets
 resource "aws_s3_bucket" "uploads" {
-  bucket = "${var.project_name}-${var.environment}-uploads-${random_id.bucket_suffix.hex}"
+  bucket = "${lower(var.project_name)}-${var.environment}-uploads-${random_id.bucket_suffix.hex}"
   
   tags = merge(var.tags, {
     Name                = "${var.project_name} Uploads Bucket"
@@ -44,7 +44,7 @@ resource "aws_s3_bucket" "uploads" {
 }
 
 resource "aws_s3_bucket" "transcribe" {
-  bucket = "${var.project_name}-${var.environment}-transcribe-${random_id.bucket_suffix.hex}"
+  bucket = "${lower(var.project_name)}-${var.environment}-transcribe-${random_id.bucket_suffix.hex}"
   
   tags = merge(var.tags, {
     Name                = "${var.project_name} Transcribe Bucket"
@@ -62,7 +62,7 @@ resource "aws_s3_bucket" "transcribe" {
 }
 
 resource "aws_s3_bucket" "frontend_builds" {
-  bucket = "${var.project_name}-${var.environment}-builds-${random_id.bucket_suffix.hex}"
+  bucket = "${lower(var.project_name)}-${var.environment}-builds-${random_id.bucket_suffix.hex}"
   
   tags = merge(var.tags, {
     Name                = "${var.project_name} Frontend Builds"
@@ -149,18 +149,6 @@ resource "aws_s3_bucket_policy" "uploads" {
           "s3:GetObject",
           "s3:PutObject",
           "s3:DeleteObject"
-        ]
-        Resource = "${aws_s3_bucket.uploads.arn}/*"
-      },
-      {
-        Sid       = "AllowCognitoAccess"
-        Effect    = "Allow"
-        Principal = {
-          AWS = aws_cognito_user_pool.main.arn
-        }
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject"
         ]
         Resource = "${aws_s3_bucket.uploads.arn}/*"
       }

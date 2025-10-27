@@ -3,11 +3,11 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Flex, Spinner, Center } from '@chakra-ui/react';
 import { useAuth } from './hooks/useAuth.ts';
 import { Layout } from './components/Layout.tsx';
-import { LoginPage } from './pages/LoginPage';
-import { SignupPage } from './pages/SignupPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { PkbPage } from './pages/PkbPage';
-import { VersionTooltip } from './components/VersionTooltip';
+import { LoginPage } from './pages/LoginPage.tsx';
+import { SignupPage } from './pages/SignupPage.tsx';
+import { DashboardPage } from './pages/DashboardPage.tsx';
+import { PkbPage } from './pages/PkbPage.tsx';
+import { VersionTooltip } from './components/VersionTooltip.tsx';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();

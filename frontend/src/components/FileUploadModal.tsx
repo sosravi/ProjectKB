@@ -22,7 +22,7 @@ import {
   Spacer,
 } from '@chakra-ui/react';
 import { CloseIcon, AddIcon } from '@chakra-ui/icons';
-import { useContent } from '../hooks/useContent';
+import { useContent } from '../hooks/useContent.ts';
 
 interface FileUploadModalProps {
   isOpen: boolean;

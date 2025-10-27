@@ -500,3 +500,4 @@ describe('Lambda Performance Tests', () => {
     expect(endTime - startTime).toBeLessThan(2000); // 2 seconds
   });
 });
+

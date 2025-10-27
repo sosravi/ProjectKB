@@ -2,7 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { BrowserRouter } from 'react-router-dom';
+import { Amplify } from 'aws-amplify';
 import App from './App.tsx';
+import awsconfig from './config/aws-exports.ts';
+
+// Configure AWS Amplify
+Amplify.configure(awsconfig);
 
 // Custom theme inspired by Notion/Figma/Linear
 const theme = extendTheme({

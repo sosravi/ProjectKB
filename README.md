@@ -195,3 +195,4 @@ See [SPRINT_LOG.md](docs/SPRINT_LOG.md) for detailed sprint tracking and deliver
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+

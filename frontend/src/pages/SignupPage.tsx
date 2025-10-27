@@ -334,3 +334,4 @@ export const SignupPage: React.FC<SignupPageProps> = ({
     </Box>
   );
 };
+

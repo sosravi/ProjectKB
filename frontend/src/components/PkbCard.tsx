@@ -28,8 +28,8 @@ import {
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon, HamburgerIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
-import { Pkb } from '../hooks/usePkb';
-import { usePkb } from '../hooks/usePkb';
+import { Pkb } from '../hooks/usePkb.ts';
+import { usePkb } from '../hooks/usePkb.ts';
 
 interface PkbCardProps {
   pkb: Pkb;
