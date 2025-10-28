@@ -9,11 +9,15 @@ import { PkbCard } from '../components/PkbCard.tsx';
 export const DashboardPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   
-  // Don't render if not authenticated
+  // Early return if not authenticated to avoid hook issues
   if (!isAuthenticated || !user) {
     return null;
   }
   
+  return <DashboardContent />;
+};
+
+const DashboardContent: React.FC = () => {
   const { pkbs, isLoading, error, refreshPkbs } = usePkb();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [searchQuery, setSearchQuery] = useState('');
