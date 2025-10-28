@@ -654,6 +654,33 @@ resource "aws_lambda_permission" "api_gateway_pkb_list" {
   source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
 }
 
+# POST method for creating PKBs
+resource "aws_api_gateway_method" "pkb_post" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.pkb.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "pkb_create" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.pkb.id
+  http_method = aws_api_gateway_method.pkb_post.http_method
+  type        = "AWS_PROXY"
+  uri         = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-${var.environment}-pkb-create/invocations"
+  
+  integration_http_method = "POST"
+}
+
+# Lambda permission for API Gateway to invoke pkb-create
+resource "aws_lambda_permission" "api_gateway_pkb_create" {
+  statement_id  = "AllowExecutionFromAPIGatewayPKBCreate"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.project_name}-${var.environment}-pkb-create"
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
+}
+
 resource "aws_api_gateway_method" "proxy_any" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
   resource_id   = aws_api_gateway_resource.proxy.id
@@ -670,6 +697,8 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_resource.proxy.id,
       aws_api_gateway_method.proxy_options.id,
       aws_api_gateway_integration.proxy_options.id,
+      aws_api_gateway_method.pkb_get.id,
+      aws_api_gateway_method.pkb_post.id,
     ]))
   }
   
