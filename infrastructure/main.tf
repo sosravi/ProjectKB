@@ -657,16 +657,16 @@ resource "aws_api_gateway_resource" "content_pkbid" {
   path_part   = "{pkbId}"
 }
 
-resource "aws_api_gateway_resource" "content_contentid" {
+resource "aws_api_gateway_resource" "content_download_path" {
   rest_api_id = aws_api_gateway_rest_api.main.id
   parent_id   = aws_api_gateway_resource.content.id
-  path_part   = "{contentId}"
+  path_part   = "download"
 }
 
 resource "aws_api_gateway_resource" "content_download" {
   rest_api_id = aws_api_gateway_rest_api.main.id
-  parent_id   = aws_api_gateway_resource.content_contentid.id
-  path_part   = "download"
+  parent_id   = aws_api_gateway_resource.content_download_path.id
+  path_part   = "{contentId}"
 }
 
 # API Gateway Method for presigned URL generation
@@ -750,6 +750,33 @@ resource "aws_lambda_permission" "api_gateway_content_list" {
   source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
 }
 
+# API Gateway Method for download URL
+resource "aws_api_gateway_method" "content_download_get" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.content_download.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "content_download" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.content_download.id
+  http_method = aws_api_gateway_method.content_download_get.http_method
+  type        = "AWS_PROXY"
+  uri         = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-${var.environment}-content-download-url/invocations"
+  
+  integration_http_method = "POST"
+}
+
+# Lambda permission for API Gateway to invoke content-download-url
+resource "aws_lambda_permission" "api_gateway_content_download" {
+  statement_id  = "AllowExecutionFromAPIGatewayContentDownload"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.project_name}-${var.environment}-content-download-url"
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
+}
+
 # API Gateway Methods and Integrations for PKB endpoints
 resource "aws_api_gateway_method" "pkb_get" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
@@ -825,6 +852,7 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_method.content_presigned_post.id,
       aws_api_gateway_method.content_confirm_post.id,
       aws_api_gateway_method.content_pkbid_get.id,
+      aws_api_gateway_method.content_download_get.id,
     ]))
   }
   

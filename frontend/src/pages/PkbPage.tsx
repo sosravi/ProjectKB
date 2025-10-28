@@ -18,12 +18,12 @@ import {
   MenuList,
   MenuItem,
   useDisclosure,
-  SimpleGrid,
-  Card,
-  CardBody,
-  CardHeader,
-  Flex,
-  Spacer,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
 } from '@chakra-ui/react';
 import { ArrowBackIcon, AddIcon, DeleteIcon, DownloadIcon, HamburgerIcon } from '@chakra-ui/icons';
 import { usePkb } from '../hooks/usePkb.ts';
@@ -181,61 +181,56 @@ export const PkbPage: React.FC = () => {
             </VStack>
           </Box>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-            {content.map((item) => (
-              <Card key={item.id} variant="outline" size="sm">
-                <CardHeader pb={2}>
-                  <Flex align="center">
-                    <Box flex={1}>
-                      <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
-                        {item.fileName}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500">
-                        {formatFileSize(item.fileSize)}
-                      </Text>
-                    </Box>
-                    <Spacer />
-                    <Menu>
-                      <MenuButton
-                        as={IconButton}
-                        icon={<HamburgerIcon />}
-                        variant="ghost"
-                        size="xs"
-                      />
-                      <MenuList>
-                        <MenuItem
-                          icon={<DownloadIcon />}
-                          onClick={() => {
-                            // TODO: Implement download
-                            console.log('Download:', item.id);
-                          }}
-                        >
-                          Download
-                        </MenuItem>
-                        <MenuItem
-                          icon={<DeleteIcon />}
-                          onClick={() => handleDeleteContent(item.id)}
-                          color="red.500"
-                        >
-                          Delete
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </Flex>
-                </CardHeader>
-                <CardBody pt={0}>
-                  <VStack align="start" spacing={2}>
-                    <Badge colorScheme="gray" variant="subtle" fontSize="xx-small">
-                      {item.fileType}
-                    </Badge>
-                    <Text fontSize="xx-small" color="gray.400">
-                      Uploaded {formatDate(item.uploadedAt)}
-                    </Text>
-                  </VStack>
-                </CardBody>
-              </Card>
-            ))}
-          </SimpleGrid>
+          <Box bg="white" borderRadius="xl" boxShadow="sm" overflow="hidden">
+            <Table variant="simple">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th>File Name</Th>
+                  <Th>Type</Th>
+                  <Th>Size</Th>
+                  <Th>Uploaded</Th>
+                  <Th textAlign="center">Actions</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {content.map((item) => (
+                  <Tr key={item.id} _hover={{ bg: 'gray.50' }}>
+                    <Td fontWeight="medium">{item.fileName}</Td>
+                    <Td color="gray.600">{item.fileType}</Td>
+                    <Td color="gray.600">{formatFileSize(item.fileSize)}</Td>
+                    <Td color="gray.500" fontSize="sm">{formatDate(item.uploadedAt)}</Td>
+                    <Td>
+                      <HStack justify="center" spacing={2}>
+                        <Menu>
+                          <MenuButton
+                            as={IconButton}
+                            icon={<HamburgerIcon />}
+                            variant="ghost"
+                            size="sm"
+                          />
+                          <MenuList>
+                            <MenuItem
+                              icon={<DownloadIcon />}
+                              onClick={() => handleDownloadContent(item.id, item.fileName)}
+                            >
+                              Download
+                            </MenuItem>
+                            <MenuItem
+                              icon={<DeleteIcon />}
+                              onClick={() => handleDeleteContent(item.id)}
+                              color="red.500"
+                            >
+                              Delete
+                            </MenuItem>
+                          </MenuList>
+                        </Menu>
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
         )}
       </VStack>
 

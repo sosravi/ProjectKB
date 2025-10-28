@@ -127,7 +127,7 @@ class ContentService {
   }
 
   async getDownloadUrl(contentId: string): Promise<DownloadUrlResponse> {
-    return this.makeRequest<DownloadUrlResponse>(`/content/${contentId}/download`, {
+    return this.makeRequest<DownloadUrlResponse>(`/content/download/${contentId}`, {
       method: 'GET',
     });
   }
