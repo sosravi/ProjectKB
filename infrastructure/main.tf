@@ -639,6 +639,18 @@ resource "aws_api_gateway_resource" "content" {
   path_part   = "content"
 }
 
+resource "aws_api_gateway_resource" "ai" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_rest_api.main.root_resource_id
+  path_part   = "ai"
+}
+
+resource "aws_api_gateway_resource" "ai_query" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_resource.ai.id
+  path_part   = "query"
+}
+
 resource "aws_api_gateway_resource" "content_presigned" {
   rest_api_id = aws_api_gateway_rest_api.main.id
   parent_id   = aws_api_gateway_resource.content.id
@@ -777,6 +789,33 @@ resource "aws_lambda_permission" "api_gateway_content_download" {
   source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
 }
 
+# API Gateway Method for AI query
+resource "aws_api_gateway_method" "ai_query_post" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.ai_query.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "ai_query" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.ai_query.id
+  http_method = aws_api_gateway_method.ai_query_post.http_method
+  type        = "AWS_PROXY"
+  uri         = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-${var.environment}-ai-query-content/invocations"
+  
+  integration_http_method = "POST"
+}
+
+# Lambda permission for API Gateway to invoke ai-query-content
+resource "aws_lambda_permission" "api_gateway_ai_query" {
+  statement_id  = "AllowExecutionFromAPIGatewayAiQuery"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.project_name}-${var.environment}-ai-query-content"
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
+}
+
 # API Gateway Methods and Integrations for PKB endpoints
 resource "aws_api_gateway_method" "pkb_get" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
@@ -853,6 +892,7 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_method.content_confirm_post.id,
       aws_api_gateway_method.content_pkbid_get.id,
       aws_api_gateway_method.content_download_get.id,
+      aws_api_gateway_method.ai_query_post.id,
     ]))
   }
   
