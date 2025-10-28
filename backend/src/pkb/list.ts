@@ -73,7 +73,7 @@ export const handler = async (
     // Query PKBs for the user
     const queryParams: any = {
       TableName: process.env.PKB_TABLE!,
-      IndexName: 'userId-index', // GSI on userId
+      IndexName: 'userId-createdAt-index', // GSI on userId
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
         ':userId': user.userId,
