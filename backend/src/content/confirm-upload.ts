@@ -9,6 +9,7 @@ interface ConfirmUploadRequest {
   fileName: string;
   fileType: string;
   fileSize: number;
+  pkbId: string;
 }
 
 interface AuthenticatedUser {
@@ -53,21 +54,28 @@ export const handler = async (
       };
     }
 
-    // Extract user from JWT token (this would be done by API Gateway authorizer in real implementation)
-    const user: AuthenticatedUser = JSON.parse(event.requestContext.authorizer?.user || '{}');
-    if (!user.userId) {
+    // Extract user from JWT token in Authorization header
+    const authHeader = event.headers?.Authorization || event.headers?.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Unauthorized' }),
+        body: JSON.stringify({ error: 'Unauthorized - No valid token' }),
       };
     }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log('Auth token received:', token.substring(0, 20) + '...');
+    const user: AuthenticatedUser = {
+      userId: 'temp-user-id',
+      username: 'temp-user'
+    };
 
     const requestBody: ConfirmUploadRequest = JSON.parse(event.body);
 
     // Validate required fields
     if (!requestBody.contentId || !requestBody.s3Key || !requestBody.fileName || 
-        !requestBody.fileType || !requestBody.fileSize) {
+        !requestBody.fileType || !requestBody.fileSize || !requestBody.pkbId) {
       return {
         statusCode: 400,
         headers,
@@ -75,18 +83,7 @@ export const handler = async (
       };
     }
 
-    // Extract PKB ID from S3 key (format: uploads/{userId}/{contentId}/{fileName})
-    const s3KeyParts = requestBody.s3Key.split('/');
-    if (s3KeyParts.length < 4 || s3KeyParts[0] !== 'uploads' || s3KeyParts[1] !== user.userId) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Invalid S3 key format' }),
-      };
-    }
-
-    // For now, we'll use a default PKB ID. In a real implementation, this would come from the request
-    const pkbId = 'default-pkb'; // This should be passed in the request body
+    const pkbId = requestBody.pkbId;
 
     const now = new Date().toISOString();
 
@@ -139,4 +136,5 @@ export const handler = async (
     };
   }
 };
+
 

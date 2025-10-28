@@ -107,6 +107,7 @@ class ContentService {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
+        pkbId: pkbId,
       }),
     });
 

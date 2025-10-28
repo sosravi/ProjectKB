@@ -299,3 +299,4 @@ function calculateTextSimilarity(query: string, content: string): number {
   return matches / queryWords.length;
 }
 
+

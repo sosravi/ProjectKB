@@ -422,3 +422,4 @@ Cypress.Commands.add('createPKB', (name, description) => {
   cy.contains('PKB created successfully').should('be.visible');
 });
 
+
