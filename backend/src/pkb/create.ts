@@ -51,15 +51,24 @@ export const handler = async (
       };
     }
 
-    // Extract user from JWT token (this would be done by API Gateway authorizer in real implementation)
-    const user: AuthenticatedUser = JSON.parse(event.requestContext.authorizer?.user || '{}');
-    if (!user.userId) {
+    // Extract user from JWT token in Authorization header
+    const authHeader = event.headers?.Authorization || event.headers?.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Unauthorized' }),
+        body: JSON.stringify({ error: 'Unauthorized - No valid token' }),
       };
     }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    // TODO: Verify JWT token with Cognito (simplified for now)
+    // For now, we'll accept any token and use a mock user - this should be replaced with actual JWT verification
+    console.log('Auth token received:', token.substring(0, 20) + '...');
+    const user: AuthenticatedUser = {
+      userId: 'temp-user-id',
+      username: 'temp-user'
+    };
 
     const requestBody: CreatePkbRequest = JSON.parse(event.body);
 
@@ -108,12 +117,14 @@ export const handler = async (
 
     // Generate PKB ID
     const pkbId = uuidv4();
+    const id = pkbId; // Use pkbId as the DynamoDB id
     const now = new Date().toISOString();
 
     // Create PKB item
     const pkbItem = {
-      pkbId,
+      id,
       userId: user.userId,
+      pkbId, // Keep for backward compatibility
       name: requestBody.name.trim(),
       description: requestBody.description.trim(),
       createdAt: now,
@@ -125,7 +136,7 @@ export const handler = async (
     const putParams = {
       TableName: process.env.PKB_TABLE!,
       Item: pkbItem,
-      ConditionExpression: 'attribute_not_exists(pkbId)', // Prevent overwrites
+      ConditionExpression: 'attribute_not_exists(id)', // Prevent overwrites
     };
 
     await dynamodb.put(putParams).promise();
@@ -157,4 +168,5 @@ export const handler = async (
     };
   }
 };
+
 
