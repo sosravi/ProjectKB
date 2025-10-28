@@ -93,7 +93,7 @@ export const handler = async (
     const pkbParams = {
       TableName: process.env.PKB_TABLE!,
       Key: {
-        pkbId: requestBody.pkbId,
+        id: requestBody.pkbId,
       },
     };
 
@@ -118,7 +118,7 @@ export const handler = async (
     // Get all content for this PKB
     const contentParams = {
       TableName: process.env.CONTENT_TABLE!,
-      IndexName: 'pkbId-index', // GSI on pkbId
+      IndexName: 'pkbId-uploadedAt-index', // GSI on pkbId
       KeyConditionExpression: 'pkbId = :pkbId',
       ExpressionAttributeValues: {
         ':pkbId': requestBody.pkbId,
