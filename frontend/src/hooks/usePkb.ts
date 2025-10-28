@@ -140,11 +140,12 @@ export const usePkb = () => {
 
   // Load PKBs when component mounts or authentication changes
   useEffect(() => {
-    // Only attempt to load if we're authenticated
+    // Only attempt to load if we're authenticated - guard here to prevent any API calls
     if (isAuthenticated && user) {
       loadPkbs();
     }
-  }, [isAuthenticated, user]); // Directly depend on auth state, not the callback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user]); // Intentionally not including loadPkbs to prevent infinite loops
 
   return {
     pkbs,
