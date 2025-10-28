@@ -49,27 +49,8 @@ for func_config in "${FUNCTIONS[@]}"; do
     mkdir -p "lambda-${func_name}"
     cp "${func_file}" "lambda-${func_name}/index.js"
     
-    # Only copy necessary dependencies (aws-sdk is available in Lambda runtime)
-    mkdir -p "lambda-${func_name}/node_modules"
-    if [ -d "../backend/node_modules/jsonwebtoken" ]; then
-        cp -r ../backend/node_modules/jsonwebtoken "lambda-${func_name}/node_modules/"
-    fi
-    if [ -d "../backend/node_modules/uuid" ]; then
-        cp -r ../backend/node_modules/uuid "lambda-${func_name}/node_modules/"
-    fi
-    if [ -d "../backend/node_modules/.bin" ]; then
-        mkdir -p "lambda-${func_name}/node_modules/.bin"
-    fi
-    # Copy dependencies of jsonwebtoken and uuid if they exist
-    if [ -d "../backend/node_modules/jwa" ]; then
-        cp -r ../backend/node_modules/jwa "lambda-${func_name}/node_modules/" || true
-    fi
-    if [ -d "../backend/node_modules/jws" ]; then
-        cp -r ../backend/node_modules/jws "lambda-${func_name}/node_modules/" || true
-    fi
-    if [ -d "../backend/node_modules/safe-buffer" ]; then
-        cp -r ../backend/node_modules/safe-buffer "lambda-${func_name}/node_modules/" || true
-    fi
+    # Copy all node_modules (aws-sdk and its dependencies are needed for Node.js 18+)
+    cp -r ../backend/node_modules "lambda-${func_name}/"
     
     # Create zip file
     cd "lambda-${func_name}"
