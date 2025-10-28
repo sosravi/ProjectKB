@@ -140,8 +140,11 @@ export const usePkb = () => {
 
   // Load PKBs when component mounts or authentication changes
   useEffect(() => {
-    loadPkbs();
-  }, [loadPkbs]);
+    // Only attempt to load if we're authenticated
+    if (isAuthenticated && user) {
+      loadPkbs();
+    }
+  }, [isAuthenticated, user]); // Directly depend on auth state, not the callback
 
   return {
     pkbs,
