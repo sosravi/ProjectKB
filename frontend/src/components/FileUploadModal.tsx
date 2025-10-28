@@ -45,7 +45,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
   pkbId,
   onUploadSuccess,
 }) => {
-  const { uploadFile, isLoading } = useContent(pkbId);
+  const { uploadFile: uploadFileFromHook, isLoading } = useContent(pkbId);
   const toast = useToast();
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -123,7 +123,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
         );
 
         try {
-          await uploadFile.uploadFile(uploadFile.file, (progress) => {
+          await uploadFileFromHook(uploadFile.file, (progress) => {
             setUploadFiles(prev => 
               prev.map(f => f.id === uploadFile.id ? { ...f, progress } : f)
             );
