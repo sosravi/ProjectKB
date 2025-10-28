@@ -89,6 +89,7 @@ export const handler = async (
     try {
       const contentCountResult = await dynamodb.query({
         TableName: process.env.CONTENT_TABLE!,
+        IndexName: 'pkbId-uploadedAt-index', // GSI on pkbId
         KeyConditionExpression: 'pkbId = :pkbId',
         ExpressionAttributeValues: {
           ':pkbId': pkbId,

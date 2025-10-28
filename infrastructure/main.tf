@@ -657,6 +657,18 @@ resource "aws_api_gateway_resource" "content_pkbid" {
   path_part   = "{pkbId}"
 }
 
+resource "aws_api_gateway_resource" "content_contentid" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_resource.content.id
+  path_part   = "{contentId}"
+}
+
+resource "aws_api_gateway_resource" "content_download" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_resource.content_contentid.id
+  path_part   = "download"
+}
+
 # API Gateway Method for presigned URL generation
 resource "aws_api_gateway_method" "content_presigned_post" {
   rest_api_id   = aws_api_gateway_rest_api.main.id

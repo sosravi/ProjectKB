@@ -87,6 +87,7 @@ export const handler = async (
     // Get all content items for this PKB to delete them
     const contentQueryParams = {
       TableName: process.env.CONTENT_TABLE!,
+      IndexName: 'pkbId-uploadedAt-index', // GSI on pkbId
       KeyConditionExpression: 'pkbId = :pkbId',
       ExpressionAttributeValues: {
         ':pkbId': pkbId,
