@@ -627,6 +627,39 @@ resource "aws_api_gateway_resource" "content" {
   path_part   = "content"
 }
 
+resource "aws_api_gateway_resource" "content_presigned" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_resource.content.id
+  path_part   = "presigned-url"
+}
+
+# API Gateway Method for presigned URL generation
+resource "aws_api_gateway_method" "content_presigned_post" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.content_presigned.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "content_presigned" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.content_presigned.id
+  http_method = aws_api_gateway_method.content_presigned_post.http_method
+  type        = "AWS_PROXY"
+  uri         = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-${var.environment}-content-generate-presigned-url/invocations"
+  
+  integration_http_method = "POST"
+}
+
+# Lambda permission for API Gateway to invoke content-generate-presigned-url
+resource "aws_lambda_permission" "api_gateway_content_presigned" {
+  statement_id  = "AllowExecutionFromAPIGatewayContentPresigned"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.project_name}-${var.environment}-content-generate-presigned-url"
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
+}
+
 # API Gateway Methods and Integrations for PKB endpoints
 resource "aws_api_gateway_method" "pkb_get" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
@@ -699,6 +732,7 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_integration.proxy_options.id,
       aws_api_gateway_method.pkb_get.id,
       aws_api_gateway_method.pkb_post.id,
+      aws_api_gateway_method.content_presigned_post.id,
     ]))
   }
   
