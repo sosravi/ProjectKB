@@ -67,6 +67,8 @@ export const useAuth = () => {
     ...authState,
     signIn,
     signOut,
+    checkAuthState,
   };
 };
+
 

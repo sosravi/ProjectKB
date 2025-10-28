@@ -10,7 +10,7 @@ import { PkbPage } from './pages/PkbPage.tsx';
 import { VersionTooltip } from './components/VersionTooltip.tsx';
 
 function App() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, checkAuthState } = useAuth();
   const [showSignup, setShowSignup] = useState(false);
 
   if (isLoading) {
@@ -21,8 +21,11 @@ function App() {
     );
   }
 
-  const handleLoginSuccess = () => {
-    // Authentication state will be updated by useAuth hook
+  const handleLoginSuccess = async () => {
+    // Refresh authentication state after login
+    if (checkAuthState) {
+      await checkAuthState();
+    }
   };
 
   const handleSignupSuccess = () => {
