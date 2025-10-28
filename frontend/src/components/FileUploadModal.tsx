@@ -51,14 +51,22 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
 
   const validateFile = (file: File): string | null => {
-    // File type validation
-    const allowedTypes = [
+    // File type validation - allowed MIME types
+    const allowedMimeTypes = [
       'application/pdf',
       'image/jpeg',
       'image/png',
       'image/gif',
       'text/plain',
       'text/markdown',
+      'text/x-sh',
+      'application/x-sh',
+      'text/x-python',
+      'application/javascript',
+      'application/json',
+      'text/json',
+      'text/xml',
+      'application/xml',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'video/mp4',
@@ -66,8 +74,23 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
       'audio/wav',
     ];
 
-    if (!allowedTypes.includes(file.type)) {
-      return 'File type not supported';
+    // Allowed file extensions (for files that might not have correct MIME types)
+    const allowedExtensions = [
+      '.pdf', '.jpg', '.jpeg', '.png', '.gif',
+      '.txt', '.md', '.markdown', '.sh', '.bash',
+      '.py', '.js', '.ts', '.json', '.xml',
+      '.doc', '.docx', '.mp4', '.mp3', '.wav',
+      '.csv', '.xls', '.xlsx', '.ppt', '.pptx',
+      '.zip', '.tar', '.gz',
+    ];
+
+    // Check MIME type or file extension
+    const hasValidMimeType = allowedMimeTypes.includes(file.type);
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+    if (!hasValidMimeType && !hasValidExtension) {
+      return `File type not supported: ${file.name}`;
     }
 
     // File size validation
