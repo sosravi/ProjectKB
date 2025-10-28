@@ -89,7 +89,7 @@ export const handler = async (
 
     // Create content item
     const contentItem = {
-      contentId: requestBody.contentId,
+      id: requestBody.contentId, // Use id as the DynamoDB hash key
       pkbId,
       userId: user.userId,
       fileName: requestBody.fileName,
@@ -104,7 +104,7 @@ export const handler = async (
     const putParams = {
       TableName: process.env.CONTENT_TABLE!,
       Item: contentItem,
-      ConditionExpression: 'attribute_not_exists(contentId)', // Prevent overwrites
+      ConditionExpression: 'attribute_not_exists(id)', // Prevent overwrites
     };
 
     await dynamodb.put(putParams).promise();
