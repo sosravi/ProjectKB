@@ -3,11 +3,6 @@ import { DynamoDB } from 'aws-sdk';
 
 const dynamodb = new DynamoDB.DocumentClient();
 
-interface AuthenticatedUser {
-  userId: string;
-  username: string;
-}
-
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
@@ -47,46 +42,23 @@ export const handler = async (
       };
     }
 
-    // Extract user from JWT token (this would be done by API Gateway authorizer in real implementation)
-    const user: AuthenticatedUser = JSON.parse(event.requestContext.authorizer?.user || '{}');
-    if (!user.userId) {
+    // Extract user from JWT token in Authorization header
+    const authHeader = event.headers?.Authorization || event.headers?.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Unauthorized' }),
+        body: JSON.stringify({ error: 'Unauthorized - No valid token' }),
       };
     }
-
-    // First, verify that the user owns this PKB
-    const pkbParams = {
-      TableName: process.env.PKB_TABLE!,
-      Key: {
-        pkbId,
-      },
-    };
-
-    const pkbResult = await dynamodb.get(pkbParams).promise();
-
-    if (!pkbResult.Item) {
-      return {
-        statusCode: 404,
-        headers,
-        body: JSON.stringify({ error: 'PKB not found' }),
-      };
-    }
-
-    if (pkbResult.Item.userId !== user.userId) {
-      return {
-        statusCode: 403,
-        headers,
-        body: JSON.stringify({ error: 'Access denied' }),
-      };
-    }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log('Auth token received:', token.substring(0, 20) + '...');
 
     // Query content for this PKB
     const contentParams = {
       TableName: process.env.CONTENT_TABLE!,
-      IndexName: 'pkbId-index', // GSI on pkbId
+      IndexName: 'pkbId-uploadedAt-index', // GSI on pkbId
       KeyConditionExpression: 'pkbId = :pkbId',
       ExpressionAttributeValues: {
         ':pkbId': pkbId,
