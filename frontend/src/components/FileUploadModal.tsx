@@ -70,6 +70,8 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
       'audio/mpeg',
       'audio/wav',
     ];
@@ -79,7 +81,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
       '.pdf', '.jpg', '.jpeg', '.png', '.gif',
       '.txt', '.md', '.markdown', '.sh', '.bash',
       '.py', '.js', '.ts', '.json', '.xml',
-      '.doc', '.docx', '.mp4', '.mp3', '.wav',
+      '.doc', '.docx', '.mp4', '.mov', '.avi', '.mp3', '.wav',
       '.csv', '.xls', '.xlsx', '.ppt', '.pptx',
       '.zip', '.tar', '.gz',
     ];
