@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Auth } from 'aws-amplify';
+import { Auth, Hub } from 'aws-amplify';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -16,6 +16,24 @@ export const useAuth = () => {
 
   useEffect(() => {
     checkAuthState();
+    
+    // Listen for auth state changes via Hub
+    const unsubscribe = Hub.listen('auth', ({ payload: { event, data } }) => {
+      switch (event) {
+        case 'signIn':
+          checkAuthState();
+          break;
+        case 'signOut':
+          setAuthState({
+            isAuthenticated: false,
+            user: null,
+            isLoading: false,
+          });
+          break;
+      }
+    });
+      
+    return unsubscribe;
   }, []);
 
   const checkAuthState = async () => {
