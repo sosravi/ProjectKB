@@ -82,11 +82,13 @@ export const handler = async (
     // TODO: Check if user owns this content (JWT verification needed)
 
     // Generate presigned URL for download
+    // Encode filename for special characters
+    const encodedFileName = encodeURIComponent(contentItem.fileName);
     const presignedUrl = s3.getSignedUrl('getObject', {
       Bucket: process.env.S3_BUCKET!,
       Key: contentItem.s3Key,
       Expires: 3600, // 1 hour
-      ResponseContentDisposition: `attachment; filename="${contentItem.fileName}"`,
+      ResponseContentDisposition: `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`,
     });
 
     return {
