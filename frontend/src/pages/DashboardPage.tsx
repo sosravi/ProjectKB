@@ -2,10 +2,18 @@ import React, { useState } from 'react';
 import { Box, Heading, Text, Button, VStack, HStack, Input, InputGroup, InputLeftElement, SimpleGrid, Spinner, Center, Alert, AlertIcon, useDisclosure } from '@chakra-ui/react';
 import { SearchIcon, AddIcon } from '@chakra-ui/icons';
 import { usePkb } from '../hooks/usePkb.ts';
+import { useAuth } from '../hooks/useAuth.ts';
 import { CreatePkbModal } from '../components/CreatePkbModal.tsx';
 import { PkbCard } from '../components/PkbCard.tsx';
 
 export const DashboardPage: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
+  
+  // Don't render if not authenticated
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+  
   const { pkbs, isLoading, error, refreshPkbs } = usePkb();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [searchQuery, setSearchQuery] = useState('');
