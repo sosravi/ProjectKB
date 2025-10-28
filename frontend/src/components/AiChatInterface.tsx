@@ -7,7 +7,6 @@ import {
   Input,
   Button,
   IconButton,
-  ScrollArea,
   Avatar,
   Badge,
   Alert,
@@ -150,8 +149,7 @@ export const AiChatInterface: React.FC<AiChatInterfaceProps> = ({
       </Flex>
 
       {/* Messages */}
-      <Box flex={1} overflow="hidden">
-        <ScrollArea ref={scrollAreaRef} h="full" p={4}>
+      <Box flex={1} overflowY="auto" ref={scrollAreaRef} p={4}>
           <VStack spacing={4} align="stretch">
             {messages.length === 0 ? (
               <Box textAlign="center" py={8}>
@@ -243,7 +241,6 @@ export const AiChatInterface: React.FC<AiChatInterfaceProps> = ({
               </Box>
             )}
           </VStack>
-        </ScrollArea>
       </Box>
 
       {/* Error Display */}

@@ -24,16 +24,23 @@ import {
   Tr,
   Th,
   Td,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
 } from '@chakra-ui/react';
-import { ArrowBackIcon, AddIcon, DeleteIcon, DownloadIcon, HamburgerIcon, ViewIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon, AddIcon, DeleteIcon, DownloadIcon, HamburgerIcon, ViewIcon, ChatIcon } from '@chakra-ui/icons';
 import { usePkb } from '../hooks/usePkb.ts';
 import { useContent } from '../hooks/useContent.ts';
 import { FileUploadModal } from '../components/FileUploadModal.tsx';
+import { AiChatInterface } from '../components/AiChatInterface.tsx';
 
 export const PkbPage: React.FC = () => {
   const { pkbId } = useParams<{ pkbId: string }>();
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isAiOpen, onOpen: onAiOpen, onClose: onAiClose } = useDisclosure();
   const { getPkbById, isLoading: isLoadingPkb } = usePkb();
   const { content, isLoading: isLoadingContent, error, deleteContent, getDownloadUrl, refreshContent } = useContent(pkbId || '');
 
@@ -133,15 +140,26 @@ export const PkbPage: React.FC = () => {
               </Text>
             </Box>
           </HStack>
-          <Button
-            leftIcon={<AddIcon />}
-            bg="brand.500"
-            color="white"
-            _hover={{ bg: 'brand.600' }}
-            onClick={onOpen}
-          >
-            Add File
-          </Button>
+          <HStack spacing={3}>
+            <Button
+              leftIcon={<ChatIcon />}
+              bg="purple.500"
+              color="white"
+              _hover={{ bg: 'purple.600' }}
+              onClick={onAiOpen}
+            >
+              Ask AI
+            </Button>
+            <Button
+              leftIcon={<AddIcon />}
+              bg="brand.500"
+              color="white"
+              _hover={{ bg: 'brand.600' }}
+              onClick={onOpen}
+            >
+              Add File
+            </Button>
+          </HStack>
         </HStack>
 
         {/* Description */}
@@ -266,6 +284,21 @@ export const PkbPage: React.FC = () => {
         pkbId={pkbId || ''}
         onUploadSuccess={handleUploadSuccess}
       />
+
+      {/* AI Chat Interface Modal */}
+      <Modal isOpen={isAiOpen} onClose={onAiClose} size="2xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Ask AI about your Knowledge Base</ModalHeader>
+          <ModalCloseButton />
+          <Box p={6}>
+            <AiChatInterface
+              pkbId={pkbId || ''}
+              onClose={onAiClose}
+            />
+          </Box>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
