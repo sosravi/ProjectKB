@@ -35,7 +35,7 @@ export const PkbPage: React.FC = () => {
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { getPkbById, isLoading: isLoadingPkb } = usePkb();
-  const { content, isLoading: isLoadingContent, error, deleteContent, refreshContent } = useContent(pkbId || '');
+  const { content, isLoading: isLoadingContent, error, deleteContent, getDownloadUrl, refreshContent } = useContent(pkbId || '');
 
   const pkb = getPkbById(pkbId || '');
 
@@ -85,6 +85,15 @@ export const PkbPage: React.FC = () => {
       } catch (err) {
         console.error('Failed to delete content:', err);
       }
+    }
+  };
+
+  const handleDownloadContent = async (contentId: string, fileName: string) => {
+    try {
+      const downloadUrl = await getDownloadUrl(contentId);
+      window.open(downloadUrl, '_blank');
+    } catch (err) {
+      console.error('Failed to get download URL:', err);
     }
   };
 
