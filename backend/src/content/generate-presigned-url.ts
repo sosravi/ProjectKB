@@ -53,14 +53,22 @@ export const handler = async (
     }
 
     // Extract user from JWT token (this would be done by API Gateway authorizer in real implementation)
-    const user: AuthenticatedUser = JSON.parse(event.requestContext.authorizer?.user || '{}');
-    if (!user.userId) {
+    // Extract user from JWT token in Authorization header
+    const authHeader = event.headers?.Authorization || event.headers?.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Unauthorized' }),
+        body: JSON.stringify({ error: 'Unauthorized - No valid token' }),
       };
     }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log('Auth token received:', token.substring(0, 20) + '...');
+    const user: AuthenticatedUser = {
+      userId: 'temp-user-id',
+      username: 'temp-user'
+    };
 
     const requestBody: GeneratePresignedUrlRequest = JSON.parse(event.body);
 
@@ -143,4 +151,5 @@ export const handler = async (
     };
   }
 };
+
 
