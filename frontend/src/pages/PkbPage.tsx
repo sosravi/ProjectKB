@@ -25,7 +25,7 @@ import {
   Th,
   Td,
 } from '@chakra-ui/react';
-import { ArrowBackIcon, AddIcon, DeleteIcon, DownloadIcon, HamburgerIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon, AddIcon, DeleteIcon, DownloadIcon, HamburgerIcon, ViewIcon } from '@chakra-ui/icons';
 import { usePkb } from '../hooks/usePkb.ts';
 import { useContent } from '../hooks/useContent.ts';
 import { FileUploadModal } from '../components/FileUploadModal.tsx';
@@ -94,6 +94,16 @@ export const PkbPage: React.FC = () => {
       window.open(downloadUrl, '_blank');
     } catch (err) {
       console.error('Failed to get download URL:', err);
+    }
+  };
+
+  const handleViewContent = async (contentId: string, fileName: string) => {
+    try {
+      const downloadUrl = await getDownloadUrl(contentId);
+      // Open in new tab for viewing
+      window.open(downloadUrl, '_blank');
+    } catch (err) {
+      console.error('Failed to get view URL:', err);
     }
   };
 
@@ -218,6 +228,12 @@ export const PkbPage: React.FC = () => {
                             size="sm"
                           />
                           <MenuList>
+                            <MenuItem
+                              icon={<ViewIcon />}
+                              onClick={() => handleViewContent(item.id, item.fileName)}
+                            >
+                              View
+                            </MenuItem>
                             <MenuItem
                               icon={<DownloadIcon />}
                               onClick={() => handleDownloadContent(item.id, item.fileName)}
