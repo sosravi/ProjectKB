@@ -135,7 +135,15 @@ export const handler = async (
     }
 
     // Prepare prompt for Bedrock
-    const contextText = contentContexts.join('\n\n');
+    // Limit content to ~4MB to stay within Bedrock's 9MB total limit
+    const maxContentSize = 4 * 1024 * 1024; // 4MB in bytes
+    let contextText = contentContexts.join('\n\n');
+    
+    if (contextText.length > maxContentSize) {
+      contextText = contextText.substring(0, maxContentSize);
+      contextText += '\n\n[Content truncated due to size limits - using first 4MB of content]';
+    }
+    
     const prompt = `You are an AI assistant helping users query their project knowledge base. 
 
 Context from user's files:
@@ -181,10 +189,25 @@ Answer:`;
 
     // Handle specific Bedrock errors
     if (error.code === 'ValidationException') {
+      if (error.message && error.message.includes('too many total bytes')) {
+        return {
+          statusCode: 413,
+          headers,
+          body: JSON.stringify({ error: 'Content too large. Please upload smaller files or reduce the number of files.' }),
+        };
+      }
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: 'Invalid request format' }),
+      };
+    }
+
+    if (error.code === 'ResourceNotFoundException') {
+      return {
+        statusCode: 503,
+        headers,
+        body: JSON.stringify({ error: 'AI service not enabled. Please enable Bedrock access in AWS Console.' }),
       };
     }
 
