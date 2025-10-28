@@ -57,16 +57,21 @@ export const handler = async (
     console.log('Auth token received:', token.substring(0, 20) + '...');
 
     // Get the content to check ownership and get S3 key
-    const getParams = {
+    // Note: Since Content table has composite key (id, pkbId), we need to Query
+    // Query by id using the primary key
+    const queryParams = {
       TableName: process.env.CONTENT_TABLE!,
-      Key: {
-        id: contentId, // Use id as the DynamoDB hash key
+      KeyConditionExpression: 'id = :id',
+      ExpressionAttributeValues: {
+        ':id': contentId,
       },
+      Limit: 1,
     };
 
-    const getResult = await dynamodb.get(getParams).promise();
+    const queryResult = await dynamodb.query(queryParams).promise();
+    const contentItem = queryResult.Items?.[0];
 
-    if (!getResult.Item) {
+    if (!contentItem) {
       return {
         statusCode: 404,
         headers,
@@ -79,9 +84,9 @@ export const handler = async (
     // Generate presigned URL for download
     const presignedUrl = s3.getSignedUrl('getObject', {
       Bucket: process.env.S3_BUCKET!,
-      Key: getResult.Item.s3Key,
+      Key: contentItem.s3Key,
       Expires: 3600, // 1 hour
-      ResponseContentDisposition: `attachment; filename="${getResult.Item.fileName}"`,
+      ResponseContentDisposition: `attachment; filename="${contentItem.fileName}"`,
     });
 
     return {
@@ -89,7 +94,7 @@ export const handler = async (
       headers,
       body: JSON.stringify({
         downloadUrl: presignedUrl,
-        fileName: getResult.Item.fileName,
+        fileName: contentItem.fileName,
         expiresIn: 3600,
       }),
     };
