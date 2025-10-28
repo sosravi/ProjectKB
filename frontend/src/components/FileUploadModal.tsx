@@ -72,6 +72,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
       'video/mp4',
       'video/quicktime',
       'video/x-msvideo',
+      'video/webm',
       'audio/mpeg',
       'audio/wav',
     ];
@@ -81,7 +82,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
       '.pdf', '.jpg', '.jpeg', '.png', '.gif',
       '.txt', '.md', '.markdown', '.sh', '.bash',
       '.py', '.js', '.ts', '.json', '.xml',
-      '.doc', '.docx', '.mp4', '.mov', '.avi', '.mp3', '.wav',
+      '.doc', '.docx', '.mp4', '.mov', '.avi', '.webm', '.mp3', '.wav',
       '.csv', '.xls', '.xlsx', '.ppt', '.pptx',
       '.zip', '.tar', '.gz',
     ];
